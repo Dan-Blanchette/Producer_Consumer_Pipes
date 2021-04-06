@@ -29,10 +29,14 @@ int main(int argc, char *argv[])
     int iNumConsumers = atoi(argv[4]);     // The number of Consumers
     int tMaxConsumerSleep = atoi(argv[5]); // The max sleep time between reads for a consumer (In milliseconds)
 
+    /** declare dynamic 2D arrays of type int **/
+    
+    // Producers
+    int **fd_p = (int **) malloc(iNumProducers * sizeof(int *)); 
+    // Consumers
+    int **fd_c = (int **) malloc(iNumConsumers * sizeof(int *)); 
 
-    int **fd_p = (int **) malloc(iNumProducers * sizeof(int *)); ///< Producers
-    int **fd_c = (int **) malloc(iNumConsumers * sizeof(int *)); ///< Consumers
-
+    // intialize producers
     for (int i = 0; i < iNumProducers; ++i)
     {
         fd_p[i] = (int *) malloc(2 * sizeof(int));
@@ -43,13 +47,19 @@ int main(int argc, char *argv[])
     pid_t *children = (pid_t *)malloc((iNumProducers + iNumConsumers) * sizeof(pid_t));
     pid_t *children2 = (pid_t *)malloc((iNumProducers + iNumConsumers) * sizeof(pid_t));
 
-    // producers for loop
+    // producers for loop copies entires from forkProducer()
     for (int i = 0; i < iNumProducers; ++i)
     {
         children[i] = forkProducer(i, fd_p[i], tMaxProducerSleep, ('A' + i));
     }
 
-    //add comsumers for loop here
+    // Initialize consumer for loop
+    for (int i = 0; i < iNumConsumers; ++i)
+    {
+        fd_c[i] = (int *)malloc(2 * sizeof(int));
+    }
+
+    //consumer for loop copies entries from forkConsumer()
     for (int i = 0; i < iNumConsumers; ++i)
     {
         children2[i] = forkConsumer(i, fd_c[i], tMaxConsumerSleep);
