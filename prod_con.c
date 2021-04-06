@@ -21,10 +21,11 @@
 pid_t forkProducer(int index, int fd_p[], int tMaxSleep, const char write_char)
 {
     pipe(fd_p);
+    int prodNum = 0;
     char string[] = {write_char, '\0'};
 
 
-    int pipeSize =32;
+    int pipeSize = 32;
 
     pid_t childpid = fork();
 
@@ -56,7 +57,9 @@ pid_t forkProducer(int index, int fd_p[], int tMaxSleep, const char write_char)
         // close the write end of pipe and return the pid.
         // Parent process closes up output side of pipe
         close(fd_p[WRITE]);
+        prodNum -= prodNum + 1;
         fcntl(fd_p[READ], F_SETPIPE_SZ, &pipeSize);
+        
     }
 }
 
@@ -70,8 +73,37 @@ pid_t forkProducer(int index, int fd_p[], int tMaxSleep, const char write_char)
  * @return pid_t 
  */
 
-pid_t forkConsumer(int index, int fd_p[], int tMaxSleep)
+pid_t forkConsumer(int index, int fd_c[], int tMaxSleep)
 {
+    pipe(fd_c);
+
+    int pipeSize = 32;
+
+    pid_t childpid = fork();
+
+    if (childpid == -1)
+    {
+        perror("fork");
+        exit(1);
+    }
+
+    if (childpid == 0)
+    {
+        // Child process closes up input side of pipe
+        close(fd_c[READ]);
+
+        fcntl(fd_c[WRITE], F_SETPIPE_SZ, &pipeSize);
+
+        while (1)
+        {
+            // printf("%c recieved string: %c from producer, buffChar1, buffChar2");
+        }
+    }
+    else
+    {
+
+    }
+
 
 }
 
@@ -112,7 +144,6 @@ void runB(time_t tStart, int iNumProducers, int iNumConsumers, int **fd_p, int *
             fd_c[i][0];
         }
     }
-
 
     for(int i = 0; i < (iNumProducers + iNumConsumers); ++i)
     {

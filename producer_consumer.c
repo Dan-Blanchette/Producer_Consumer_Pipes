@@ -15,11 +15,9 @@ int main(int argc, char *argv[])
 {
     srand(time(NULL));
     time_t start = time(NULL);
-    // int fd[2];
-
+    
     if (argc < 6)
     {
-
         printf("%s run_time num_producers max_sleep_producer num_consumers max_sleep_consumer\n", argv[0]);
         printf("%s 10 4 45 4 73\n", argv[0]);
         return 1;

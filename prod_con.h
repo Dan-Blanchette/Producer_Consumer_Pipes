@@ -25,6 +25,9 @@
 #define READ 0
 #define WRITE 1
 
+
+int fd[2];
+
 /** FUNCTIONS **/
 pid_t forkProducer(int index, int fd_p[], int tMaxSleep, const char write_char);
 pid_t forkConsumer(int index, int fd_p[], int tMaxSleep);
