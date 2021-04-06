@@ -122,8 +122,13 @@ pid_t forkConsumer(int index, int fd_c[], int tMaxSleep)
 
 void runB(time_t tStart, int iNumProducers, int iNumConsumers, int **fd_p, int **fd_c, int tRunTime, pid_t *children)
 {
+    //variables for the buffer
+    char myQueue[BUFFER_SIZE]; // In runB
+    int queueBegin = 0;         // In runB
+    int queueEnd = 0;           // In runB
+
     // a char buffer 
-    char readbuffer[2] = {'\0','\0'};
+    char readbuffer[1] ='\0';
 
     // Read in a string from the pipe
      for (int i = 0; i < iNumProducers; ++i)
@@ -148,5 +153,69 @@ void runB(time_t tStart, int iNumProducers, int iNumConsumers, int **fd_p, int *
     for(int i = 0; i < (iNumProducers + iNumConsumers); ++i)
     {
         kill(children[1], SIGKILL);
+    }
+}
+
+/**
+ * @brief 
+ * 
+ * @param value 
+ */
+void queueIncrement(int *value)
+{
+    (*value)++;
+
+    if ( *value >= BUFFER_SIZE)
+    {
+        *value = 0;
+    }
+}
+
+
+/**
+ * @brief 
+ * 
+ * @param qBegin 
+ * @param qEnd 
+ * @return int 
+ */
+int queueSize(int qBegin, int qEnd)
+{
+    int size = qEnd - qBegin;
+
+    if (size < 0)
+    {
+        size += BUFFER_SIZE;
+    }
+}
+
+int queueEmpty(int qBegin, int qEnd) // return 1 if queue empty, 0 if not empty
+{
+    return (queueSize(qBegin,qEnd) == 0);
+}
+
+int queueFull(int qBegin, int qEnd)  // return 1 if full, 0 if not full
+{
+    return (queueSize(qBegin, qEnd) + 1 >= BUFFER_SIZE);
+}
+
+int queueAdd(char myQueue[], int *qBegin, int *qEnd, char newElement)
+{
+    if (queueFull(*qBegin, qEnd))
+    {
+        printf("Error, The queue is full");
+        return 0; // False
+    }
+    queueIncrement(qEnd);
+    myQueue[*qEnd] = newElement;
+    return 1;
+}
+
+char queueGetFirst(char myQueue[], int *qBegin, int *qEnd)
+{
+    if (queueEmpty(*qBegin, *qEnd))
+    {
+        printf("Error, the queue is empty");
+        
     }
 }

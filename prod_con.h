@@ -21,7 +21,7 @@
 #include <sys/wait.h>
 #include <fcntl.h>
 
-#define BBUFFER_SIZE 1000
+#define BUFFER_SIZE 30
 #define READ 0
 #define WRITE 1
 
@@ -29,6 +29,15 @@
 int fd[2];
 
 /** FUNCTIONS **/
+void queueIncrement(int *value);
+int queueSize(int qBegin, int qEnd);
+
+int queueEmpty(int qBegin, int qEnd); // return 1 if queue empty, 0 if not empty
+int queueFull(int qBegin, int qEnd);  // return 1 if full, 0 if not full
+
+int queueAdd(char myQueue[], int *qBegin, int *qEnd, char newElement);
+char queueGetFirst(char myQueue[], int *qBegin, int *qEnd);
+
 pid_t forkProducer(int index, int fd_p[], int tMaxSleep, const char write_char);
 pid_t forkConsumer(int index, int fd_p[], int tMaxSleep);
 void runB(time_t tStart, int iNumProducers, int iNumConsumers, int **fd_p, int **fd_c, int tRunTime, pid_t *children);
