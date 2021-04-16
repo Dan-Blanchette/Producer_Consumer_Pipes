@@ -45,6 +45,7 @@ pid_t forkProducer(int index, int fd_p[], int tMaxSleep, const char write_char)
         while (1)
         {
             write(fd_p[WRITE], string, strlen(string) + 1);
+            printf("P%d wrote %c\n", index, write_char);
             usleep(rand() % tMaxSleep * 1000); // Do not forget to seed the rand() function
         }
 
@@ -90,9 +91,9 @@ pid_t forkConsumer(int index, int fd_c[], int tMaxSleep)
     if (childpid == 0)
     {
         // Child process closes up input side of pipe
-        close(fd_c[READ]);
+        close(fd_c[WRITE]);
 
-        fcntl(fd_c[WRITE], F_SETPIPE_SZ, &pipeSize);
+        fcntl(fd_c[READ], F_SETPIPE_SZ, &pipeSize);
 
         while (1)
         {
@@ -140,8 +141,16 @@ void runB(time_t tStart, int iNumProducers, int iNumConsumers, int **fd_p, int *
     {
         for (int i = 0; i < iNumProducers; ++i)
         {
+            if(queueFull(queueBegin,queueEnd))
+            {
+                break;
+            }
             int nbytes = read(fd_p[i][READ], readbuffer, sizeof(readbuffer));
-            printf("Received string: %s", readbuffer);
+            if( nbytes > 0)
+            {
+                queueAdd(myQueue, &queueBegin, &queueEnd, nbytes);
+                printf("Received string: %s", readbuffer);
+            }
         }
 
         for (int i = 0; i < iNumConsumers; ++i)
@@ -152,7 +161,7 @@ void runB(time_t tStart, int iNumProducers, int iNumConsumers, int **fd_p, int *
 
     for(int i = 0; i < (iNumProducers + iNumConsumers); ++i)
     {
-        kill(children[1], SIGKILL);
+        kill(children[i], SIGKILL);
     }
 }
 
@@ -189,11 +198,25 @@ int queueSize(int qBegin, int qEnd)
     }
 }
 
+/**
+ * @brief 
+ * 
+ * @param qBegin 
+ * @param qEnd 
+ * @return int 
+ */
 int queueEmpty(int qBegin, int qEnd) // return 1 if queue empty, 0 if not empty
 {
     return (queueSize(qBegin,qEnd) == 0);
 }
 
+/**
+ * @brief 
+ * 
+ * @param qBegin 
+ * @param qEnd 
+ * @return int 
+ */
 int queueFull(int qBegin, int qEnd)  // return 1 if full, 0 if not full
 {
     return (queueSize(qBegin, qEnd) + 1 >= BUFFER_SIZE);
