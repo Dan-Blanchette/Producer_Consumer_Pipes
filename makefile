@@ -11,9 +11,9 @@ clean:
 
 
 
-prodCon: producer_consumer.o prod_con.o
-	$(CC) $(FLAGS) producer_consumer.o prod_con.o -o prodCon
-producer_consumer.o: producer_consumer.c prod_con.h
-	$(CC) -c producer_consumer.c
+prodCon: main.o prod_con.o
+	$(CC) $(FLAGS) main.o prod_con.o -o prodCon
+main.o: main.c prod_con.h
+	$(CC) -c main.c
 prod_con.o: prod_con.c prod_con.h
 	$(CC) -c prod_con.c
