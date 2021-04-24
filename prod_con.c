@@ -7,7 +7,6 @@
 #include "prod_con.h"
 
 
-
 /**
  * @brief creates output value based on the user's parameters entered from the command line and  
  * 
@@ -34,10 +33,10 @@ pid_t forkProducer(int index, int fd_p[], int tMaxSleep, const char write_char)
         perror("fork");
         exit(1);
     }
-
+    // child process
     if (childpid == 0)
     {
-        // Child process closes up input side of pipe
+        // Child process closes input side of pipe
         close(fd_p[READ]);
 
         fcntl(fd_p[WRITE], F_SETPIPE_SZ, &pipeSize);
@@ -69,7 +68,7 @@ pid_t forkProducer(int index, int fd_p[], int tMaxSleep, const char write_char)
  * and then prints it to the std console ouput
  * 
  * @param index 
- * @param fd_p 
+ * @param fd_c 
  * @param tMaxSleep 
  * @return pid_t 
  */
@@ -79,6 +78,7 @@ pid_t forkConsumer(int index, int fd_c[], int tMaxSleep)
     pipe(fd_c);
 
     int pipeSize = 32;
+    char buffer[BUFFER_SIZE]; 
 
     pid_t childpid = fork();
 
@@ -90,22 +90,24 @@ pid_t forkConsumer(int index, int fd_c[], int tMaxSleep)
 
     if (childpid == 0)
     {
-        // Child process closes up input side of pipe
+        // Child process closes output side of pipe
         close(fd_c[WRITE]);
 
         fcntl(fd_c[READ], F_SETPIPE_SZ, &pipeSize);
 
         while (1)
         {
-            // printf("%c recieved string: %c from producer, buffChar1, buffChar2");
+            read(fd_c[READ], buffer, BUFFER_SIZE);
+            printf("%c recieved string: %c from producer", buffer[index], index);
+            // Do not forget to seed the rand() function
+            usleep(rand() % tMaxSleep * 1000); 
         }
     }
     else
     {
-
+        close(fd_c[READ]);
+        fcntl(fd_c[READ], F_SETPIPE_SZ, &pipeSize);
     }
-
-
 }
 
 /**
@@ -129,7 +131,7 @@ void runB(time_t tStart, int iNumProducers, int iNumConsumers, int **fd_p, int *
     int queueEnd = 0;           // In runB
 
     // a char buffer 
-    char readbuffer[1] ='\0';
+    char readbuffer[1] = "\0";
 
     // Read in a string from the pipe
      for (int i = 0; i < iNumProducers; ++i)
@@ -166,15 +168,15 @@ void runB(time_t tStart, int iNumProducers, int iNumConsumers, int **fd_p, int *
 }
 
 /**
- * @brief 
+ * @brief Moves to the next element stored in the buffer
  * 
  * @param value 
  */
+
 void queueIncrement(int *value)
 {
     (*value)++;
-
-    if ( *value >= BUFFER_SIZE)
+    if (*value > BUFFER_SIZE)
     {
         *value = 0;
     }
@@ -182,51 +184,65 @@ void queueIncrement(int *value)
 
 
 /**
- * @brief 
+ * @brief Returns the size of the queue
  * 
  * @param qBegin 
  * @param qEnd 
  * @return int 
  */
+
 int queueSize(int qBegin, int qEnd)
 {
     int size = qEnd - qBegin;
 
     if (size < 0)
     {
-        size += BUFFER_SIZE;
+        size += BUFFER_SIZE + 1;
     }
+
+    return size;
 }
 
 /**
- * @brief 
+ * @brief Check to see if the queue is full
  * 
  * @param qBegin 
  * @param qEnd 
  * @return int 
  */
+
+int queueFull(int qBegin, int qEnd)
+{
+    return (queueSize(qBegin, qEnd) == 0); // return 1 if full, 0 if not full
+} 
+
+
+/**
+ * @brief Checks to see if the queue is empty
+ * 
+ * @param qBegin 
+ * @param qEnd 
+ * @return int 
+ */
+
 int queueEmpty(int qBegin, int qEnd) // return 1 if queue empty, 0 if not empty
 {
-    return (queueSize(qBegin,qEnd) == 0);
+    return (queueSize(qBegin, qEnd) == 0);
 }
 
 /**
- * @brief 
+ * @brief Adds new data to the queue
  * 
  * @param qBegin 
  * @param qEnd 
  * @return int 
  */
-int queueFull(int qBegin, int qEnd)  // return 1 if full, 0 if not full
-{
-    return (queueSize(qBegin, qEnd) + 1 >= BUFFER_SIZE);
-}
 
 int queueAdd(char myQueue[], int *qBegin, int *qEnd, char newElement)
 {
-    if (queueFull(*qBegin, qEnd))
+    if (queueFull(*qBegin, *qEnd))
     {
-        printf("Error, The queue is full");
+        printf("Error. The queue is full!");
         return 0; // False
     }
     queueIncrement(qEnd);
@@ -234,11 +250,23 @@ int queueAdd(char myQueue[], int *qBegin, int *qEnd, char newElement)
     return 1;
 }
 
+/**
+ * @brief Get the entry that is first in the queue. Returns the value of what is in the queue.
+ * 
+ * @param myQueue 
+ * @param qBegin 
+ * @param qEnd 
+ * @return char 
+ */
+
 char queueGetFirst(char myQueue[], int *qBegin, int *qEnd)
 {
     if (queueEmpty(*qBegin, *qEnd))
     {
-        printf("Error, the queue is empty");
-        
+        printf("Error. The queue is empty!");
+        return 0; // False
     }
+    queueIncrement(qBegin);
+    char retVal = myQueue[*qBegin];
+    return retVal;
 }
