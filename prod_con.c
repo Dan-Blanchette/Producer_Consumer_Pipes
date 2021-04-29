@@ -20,7 +20,6 @@
 pid_t forkProducer(int index, int fd_p[], int tMaxSleep, const char write_char)
 {
     pipe(fd_p);
-    int prodNum = 0;
     char string[] = {write_char, '\0'};
 
 
@@ -48,16 +47,12 @@ pid_t forkProducer(int index, int fd_p[], int tMaxSleep, const char write_char)
             usleep(rand() % tMaxSleep * 1000); // Do not forget to seed the rand() function
         }
 
-        // Send "string" through the output side of pipe
-        write(fd_p[WRITE], string, (strlen(string) + 1));
-        exit(0);
     }
     else
     {
         // close the write end of pipe and return the pid.
         // Parent process closes up output side of pipe
         close(fd_p[WRITE]);
-        prodNum -= prodNum + 1;
         fcntl(fd_p[READ], F_SETPIPE_SZ, &pipeSize);
         
     }
@@ -97,8 +92,7 @@ pid_t forkConsumer(int index, int fd_c[], int tMaxSleep)
 
         while (1)
         {
-            read(fd_c[READ], buffer, BUFFER_SIZE);
-            printf("%c recieved string: %c from producer", buffer[index], index);
+            read(fd_c[READ], buffer, BUFFER_SIZE); // not sure if theis line is needed buffer stuff is confusing me;
             // Do not forget to seed the rand() function
             usleep(rand() % tMaxSleep * 1000); 
         }
@@ -106,7 +100,7 @@ pid_t forkConsumer(int index, int fd_c[], int tMaxSleep)
     else
     {
         close(fd_c[READ]);
-        fcntl(fd_c[READ], F_SETPIPE_SZ, &pipeSize);
+        fcntl(fd_c[WRITE], F_SETPIPE_SZ, &pipeSize);
     }
 }
 
@@ -131,36 +125,54 @@ void runB(time_t tStart, int iNumProducers, int iNumConsumers, int **fd_p, int *
     int queueEnd = 0;           // In runB
 
     // a char buffer 
-    char readbuffer[1] = "\0";
+    char string[2] = {'\0','\0'};
 
     // Read in a string from the pipe
-     for (int i = 0; i < iNumProducers; ++i)
+    for (int i = 0; i < iNumProducers; ++i)
     {
-        fcntl(fd_p[i][0], F_SETFL, O_NONBLOCK);
+        fcntl(fd_p[i][READ], F_SETFL, O_NONBLOCK);
+    }
+    // Write a string from the buffer
+    for (int i = 0; i < iNumConsumers; ++i)
+    {
+        fcntl(fd_c[i][WRITE], F_SETFL, O_NONBLOCK);
+        // printf("iNumConsumers got called\n"); // -----> this print statement is not being invoked;
     }
 
+    int totalSumSize= 0;
+    int count = 0;
     while((time(NULL) - tStart) <= tRunTime)
     {
+        // printf("While Loop Got Called\n"); // ----> this print statement is being invoked
         for (int i = 0; i < iNumProducers; ++i)
         {
             if(queueFull(queueBegin,queueEnd))
             {
                 break;
             }
-            int nbytes = read(fd_p[i][READ], readbuffer, sizeof(readbuffer));
+            int nbytes = read(fd_p[i][READ], string, sizeof(string));
             if( nbytes > 0)
             {
-                queueAdd(myQueue, &queueBegin, &queueEnd, nbytes);
-                printf("Received string: %s", readbuffer);
+                queueAdd(myQueue, &queueBegin, &queueEnd, string[0]);
+                printf("B received string: %s from producer %d", string, i);
             }
         }
 
         for (int i = 0; i < iNumConsumers; ++i)
         {
-            fd_c[i][0];
+            if(queueEmpty(queueBegin,queueEnd))
+            {
+                break;
+            }
+            char data = queueGetFirst(myQueue, &queueBegin, &queueEnd); // gets first data
+            string[0] = data;
+            write(fd_c[i][WRITE], string, strlen(string) + 1);
+            printf("B recieved string: %s from producer %d" , string, i);
         }
+        ++count;
+        totalSumSize += queueSize(queueBegin, queueEnd);
     }
-
+    printf("Average Buffer size: %d", totalSumSize / count); // totalsumsize / count
     for(int i = 0; i < (iNumProducers + iNumConsumers); ++i)
     {
         kill(children[i], SIGKILL);
@@ -231,7 +243,7 @@ int queueEmpty(int qBegin, int qEnd) // return 1 if queue empty, 0 if not empty
 }
 
 /**
- * @brief Adds new data to the queue
+ * @brief Adds new data as a random char to the queue
  * 
  * @param qBegin 
  * @param qEnd 
@@ -251,7 +263,7 @@ int queueAdd(char myQueue[], int *qBegin, int *qEnd, char newElement)
 }
 
 /**
- * @brief Get the entry that is first in the queue. Returns the value of what is in the queue.
+ * @brief Get the entry that is first in the queue [FIFO]. Returns the char value after processing each position in the queue.
  * 
  * @param myQueue 
  * @param qBegin 

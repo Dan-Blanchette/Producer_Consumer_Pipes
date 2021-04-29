@@ -21,7 +21,7 @@
 #include <sys/wait.h>
 #include <fcntl.h>
 
-#define BUFFER_SIZE 30
+#define BUFFER_SIZE 1000
 #define READ 0
 #define WRITE 1
 
@@ -35,11 +35,11 @@ int queueSize(int qBegin, int qEnd);
 int queueEmpty(int qBegin, int qEnd); // return 1 if queue empty, 0 if not empty
 int queueFull(int qBegin, int qEnd);  // return 1 if full, 0 if not full
 
-int queueAdd(char myQueue[], int *qBegin, int *qEnd, char newElement);
-char queueGetFirst(char myQueue[], int *qBegin, int *qEnd);
+int queueAdd(char myQueue[], int *qBegin, int *qEnd, char newElement); // add cahracters to the buffer
+char queueGetFirst(char myQueue[], int *qBegin, int *qEnd); // get the first charcter in the queue
 
-pid_t forkProducer(int index, int fd_p[], int tMaxSleep, const char write_char);
-pid_t forkConsumer(int index, int fd_p[], int tMaxSleep);
+pid_t forkProducer(int index, int fd_p[], int tMaxSleep, const char write_char); // "produces" character output from a pipe and adds it to the buffer
+pid_t forkConsumer(int index, int fd_p[], int tMaxSleep);// "consumes" character input from the buffer by priority
 void runB(time_t tStart, int iNumProducers, int iNumConsumers, int **fd_p, int **fd_c, int tRunTime, pid_t *children);
 
 

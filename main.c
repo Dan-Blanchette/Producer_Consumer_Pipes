@@ -31,7 +31,7 @@ int main(int argc, char *argv[])
     int tMaxConsumerSleep = atoi(argv[5]); // The max sleep time between reads for a consumer (In milliseconds)
 
     /** declare dynamic 2D arrays of type int **/
-    
+
     // Producers
     int **fd_p = (int **) malloc(iNumProducers * sizeof(int *)); 
     // Consumers
@@ -46,7 +46,6 @@ int main(int argc, char *argv[])
     // get the total size based on the amount of dynamically allocated child processes
     // stored in pid_t array *children
     pid_t *children = (pid_t *)malloc((iNumProducers + iNumConsumers) * sizeof(pid_t));
-    pid_t *children2 = (pid_t *)malloc((iNumProducers + iNumConsumers) * sizeof(pid_t));
 
     // producers for loop copies entires from forkProducer()
     for (int i = 0; i < iNumProducers; ++i)
@@ -63,7 +62,7 @@ int main(int argc, char *argv[])
     //consumer for loop copies entries from forkConsumer()
     for (int i = 0; i < iNumConsumers; ++i)
     {
-        children2[i] = forkConsumer(i, fd_c[i], tMaxConsumerSleep);
+        children[i + iNumProducers] = forkConsumer(i, fd_c[i], tMaxConsumerSleep);
     }
 
     // routine kills child processes
