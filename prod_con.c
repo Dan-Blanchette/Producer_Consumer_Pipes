@@ -3,9 +3,7 @@
 #define _GNU_SOURCE
 #endif
 
-
 #include "prod_con.h"
-
 
 /**
  * @brief creates output value based on the user's parameters entered from the command line and  
@@ -21,7 +19,6 @@ pid_t forkProducer(int index, int fd_p[], int tMaxSleep, const char write_char)
 {
     pipe(fd_p);
     char string[] = {write_char, '\0'};
-
 
     int pipeSize = 32;
 
@@ -43,10 +40,11 @@ pid_t forkProducer(int index, int fd_p[], int tMaxSleep, const char write_char)
         while (1)
         {
             write(fd_p[WRITE], string, strlen(string) + 1);
-            printf("P%d wrote %c\n", index, write_char);
+            printf("P%d wrote %s\n", index, string);
+            fflush(stdout);
             usleep(rand() % tMaxSleep * 1000); // Do not forget to seed the rand() function
         }
-
+        exit(0);
     }
     else
     {
@@ -54,7 +52,8 @@ pid_t forkProducer(int index, int fd_p[], int tMaxSleep, const char write_char)
         // Parent process closes up output side of pipe
         close(fd_p[WRITE]);
         fcntl(fd_p[READ], F_SETPIPE_SZ, &pipeSize);
-        
+
+        return childpid;
     }
 }
 
@@ -73,7 +72,7 @@ pid_t forkConsumer(int index, int fd_c[], int tMaxSleep)
     pipe(fd_c);
 
     int pipeSize = 32;
-    char buffer[BUFFER_SIZE]; 
+    char data[2] = {'\0', '\0'};
 
     pid_t childpid = fork();
 
@@ -92,15 +91,17 @@ pid_t forkConsumer(int index, int fd_c[], int tMaxSleep)
 
         while (1)
         {
-            read(fd_c[READ], buffer, BUFFER_SIZE); // not sure if theis line is needed buffer stuff is confusing me;
+            read(fd_c[READ], data, 2); // not sure if theis line is needed buffer stuff is confusing me;
             // Do not forget to seed the rand() function
-            usleep(rand() % tMaxSleep * 1000); 
+            printf("C%d read %s\n", index, data);
+            usleep(rand() % tMaxSleep * 1000);
         }
     }
     else
     {
         close(fd_c[READ]);
         fcntl(fd_c[WRITE], F_SETPIPE_SZ, &pipeSize);
+        return childpid;
     }
 }
 
@@ -121,11 +122,11 @@ void runB(time_t tStart, int iNumProducers, int iNumConsumers, int **fd_p, int *
 {
     //variables for the buffer
     char myQueue[BUFFER_SIZE]; // In runB
-    int queueBegin = 0;         // In runB
-    int queueEnd = 0;           // In runB
+    int queueBegin = 0;        // In runB
+    int queueEnd = 0;          // In runB
 
-    // a char buffer 
-    char string[2] = {'\0','\0'};
+    // a char buffer
+    char string[2] = {'\0', '\0'};
 
     // Read in a string from the pipe
     for (int i = 0; i < iNumProducers; ++i)
@@ -136,47 +137,57 @@ void runB(time_t tStart, int iNumProducers, int iNumConsumers, int **fd_p, int *
     for (int i = 0; i < iNumConsumers; ++i)
     {
         fcntl(fd_c[i][WRITE], F_SETFL, O_NONBLOCK);
-        // printf("iNumConsumers got called\n"); // -----> this print statement is not being invoked;
     }
 
-    int totalSumSize= 0;
+    int totalSumSize = 0;
     int count = 0;
-    while((time(NULL) - tStart) <= tRunTime)
+    
+    while ((time(NULL) - tStart) <= tRunTime)
     {
-        // printf("While Loop Got Called\n"); // ----> this print statement is being invoked
         for (int i = 0; i < iNumProducers; ++i)
         {
-            if(queueFull(queueBegin,queueEnd))
+            if (queueFull(queueBegin, queueEnd))
             {
                 break;
             }
             int nbytes = read(fd_p[i][READ], string, sizeof(string));
-            if( nbytes > 0)
+            if (nbytes > 0)
             {
                 queueAdd(myQueue, &queueBegin, &queueEnd, string[0]);
-                printf("B received string: %s from producer %d", string, i);
+                printf("B received string: %s from producer %d\n", string, i);
+                fflush(stdout);
             }
         }
 
+        ++count;
+        totalSumSize += queueSize(queueBegin, queueEnd);
+
         for (int i = 0; i < iNumConsumers; ++i)
         {
-            if(queueEmpty(queueBegin,queueEnd))
+            if (queueEmpty(queueBegin, queueEnd))
             {
                 break;
             }
-            char data = queueGetFirst(myQueue, &queueBegin, &queueEnd); // gets first data
-            string[0] = data;
+            string[0] = queueGetFirst(myQueue, &queueBegin, &queueEnd); // gets first data
             write(fd_c[i][WRITE], string, strlen(string) + 1);
-            printf("B recieved string: %s from producer %d" , string, i);
-        }
-        ++count;
-        totalSumSize += queueSize(queueBegin, queueEnd);
+            printf("B wrote string: %s from consumer %d\n", string, i);
+            fflush(stdout);
+        } 
     }
-    printf("Average Buffer size: %d", totalSumSize / count); // totalsumsize / count
-    for(int i = 0; i < (iNumProducers + iNumConsumers); ++i)
+    printf("Time is up\n");
+    for (int i = 0; i < iNumProducers; ++i)
     {
         kill(children[i], SIGKILL);
+        printf("Producer %d terminated\n", i);
     }
+    for (int i = 0; i < iNumConsumers; ++i)
+    {
+        kill(children[i+iNumProducers], SIGKILL);
+        printf("Consumer %d terminated\n", i);
+    }
+    printf("Program Complete\n\n");
+    printf("Average Buffer size: %f\n", (float)totalSumSize / count); // totalsumsize / count
+
 }
 
 /**
@@ -188,12 +199,11 @@ void runB(time_t tStart, int iNumProducers, int iNumConsumers, int **fd_p, int *
 void queueIncrement(int *value)
 {
     (*value)++;
-    if (*value > BUFFER_SIZE)
+    if (*value >= BUFFER_SIZE)
     {
         *value = 0;
     }
 }
-
 
 /**
  * @brief Returns the size of the queue
@@ -225,9 +235,8 @@ int queueSize(int qBegin, int qEnd)
 
 int queueFull(int qBegin, int qEnd)
 {
-    return (queueSize(qBegin, qEnd) == 0); // return 1 if full, 0 if not full
-} 
-
+    return (queueSize(qBegin, qEnd) == BUFFER_SIZE); // return 1 if full, 0 if not full
+}
 
 /**
  * @brief Checks to see if the queue is empty
@@ -279,6 +288,11 @@ char queueGetFirst(char myQueue[], int *qBegin, int *qEnd)
         return 0; // False
     }
     queueIncrement(qBegin);
+    if (*qBegin >= BUFFER_SIZE)
+    {
+        printf("Overflow!\n");
+        exit(1);
+    }
     char retVal = myQueue[*qBegin];
     return retVal;
 }
