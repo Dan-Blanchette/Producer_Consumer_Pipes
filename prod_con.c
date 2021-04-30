@@ -169,9 +169,9 @@ void runB(time_t tStart, int iNumProducers, int iNumConsumers, int **fd_p, int *
                 break;
             }
             string[0] = queueGetFirst(myQueue, &queueBegin, &queueEnd); // gets first data
-            write(fd_c[i][WRITE], string, strlen(string) + 1);
-            printf("B wrote string: %s from consumer %d\n", string, i);
-            fflush(stdout);
+            write(fd_c[i][WRITE], string, strlen(string) + 1); // write the data
+            printf("B wrote string: %s from consumer %d\n", string, i); // console output
+            fflush(stdout); // flush buffer stdout 
         } 
     }
     printf("Time is up\n");

@@ -29,18 +29,33 @@
 int fd[2];
 
 /** FUNCTIONS **/
-void queueIncrement(int *value);
+
+// expands the queue to n elements based on user input from the command line
+void queueIncrement(int *value); 
+
+// returns the size of the queue
 int queueSize(int qBegin, int qEnd);
 
-int queueEmpty(int qBegin, int qEnd); // return 1 if queue empty, 0 if not empty
-int queueFull(int qBegin, int qEnd);  // return 1 if full, 0 if not full
+// return 1 if queue empty, 0 if not empty
+int queueEmpty(int qBegin, int qEnd); 
 
-int queueAdd(char myQueue[], int *qBegin, int *qEnd, char newElement); // add cahracters to the buffer
-char queueGetFirst(char myQueue[], int *qBegin, int *qEnd); // get the first charcter in the queue
+// return 1 if full, 0 if not full
+int queueFull(int qBegin, int qEnd);  
 
-pid_t forkProducer(int index, int fd_p[], int tMaxSleep, const char write_char); // "produces" character output from a pipe and adds it to the buffer
-pid_t forkConsumer(int index, int fd_p[], int tMaxSleep);// "consumes" character input from the buffer by priority
-void runB(time_t tStart, int iNumProducers, int iNumConsumers, int **fd_p, int **fd_c, int tRunTime, pid_t *children);
+// add cahracters to the buffer
+int queueAdd(char myQueue[], int *qBegin, int *qEnd, char newElement); 
+
+// get the first charcter in the queue
+char queueGetFirst(char myQueue[], int *qBegin, int *qEnd); 
+
+// "produces" character output from a pipe and adds it to the buffer
+pid_t forkProducer(int index, int fd_p[], int tMaxSleep, const char write_char); 
+
+// "consumes" character input from the buffer by priority
+pid_t forkConsumer(int index, int fd_p[], int tMaxSleep);
+
+// forkProducer() output is added to the buffer then consumed by forkConsumer() in this routine 
+void runB(time_t tStart, int iNumProducers, int iNumConsumers, int **fd_p, int **fd_c, int tRunTime, pid_t *children); // 
 
 
 #endif

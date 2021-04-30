@@ -14,8 +14,8 @@
 
 int main(int argc, char *argv[])
 {
-    srand(time(NULL));
-    time_t start = time(NULL);
+    srand(time(NULL)); // seed initialization for srand
+    time_t start = time(NULL); // start assigned the time_t intial value of 0 milli-seconds
     
     if (argc < 6)
     {
