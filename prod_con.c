@@ -155,6 +155,7 @@ void runB(time_t tStart, int iNumProducers, int iNumConsumers, int **fd_p, int *
             {
                 queueAdd(myQueue, &queueBegin, &queueEnd, string[0]);
                 printf("B received string: %s from producer %d\n", string, i);
+                printf("Current Size %d\n", queueSize(queueBegin,queueEnd));
                 fflush(stdout);
             }
         }
